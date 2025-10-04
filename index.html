@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG Valid</title>
+<style>
+  body {
+    font-family: monospace, sans-serif;
+    background: linear-gradient(135deg, #222, #444);
+    color: #f0f0f0;
+    margin: 0;
+    text-align: center;
+  }
+  h1 { margin-top: 10px; }
+  .btn {
+    background: #555;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  .btn:hover { background: #777; }
+  #menu, #game, #battle { display: none; }
+  pre {
+    background: #111;
+    color: #0f0;
+    padding: 10px;
+    text-align: left;
+    overflow-y: auto;
+    max-height: 300px;
+  }
+  img.monstro, img.player {
+    width: 100px;
+    height: 100px;
+  }
+</style>
+</head>
+<body>
+<h1>⚔️ RPG VALID ⚔️</h1>
+
+<div id="start">
+  <button class="btn" onclick="novoJogo()">Novo Jogo</button>
+  <button class="btn" onclick="carregarJogo()">Carregar Jogo</button>
+</div>
+
+<div id="classeSelect" style="display:none;">
+  <h2>Escolha sua Classe</h2>
+  <button class="btn" onclick="escolherClasse('Guerreiro')">🛡 Guerreiro</button>
+  <button class="btn" onclick="escolherClasse('Mago')">✨ Mago</button>
+  <button class="btn" onclick="escolherClasse('Arqueiro')">🏹 Arqueiro</button>
+</div>
+
+<div id="menu">
+  <h2 id="status"></h2>
+  <div>
+    <img id="imgPlayer" class="player" src="https://placehold.co/100x100/000000/FFF?text=Stickman" alt="player">
+  </div>
+  <button class="btn" onclick="explorar()">Explorar</button>
+  <button class="btn" onclick="viajar()">🌍 Viajar</button>
+  <button class="btn" onclick="ferreiro()">⚒️ Ferreiro</button>
+  <button class="btn" onclick="mostrarInventario()">🎒 Inventário</button>
+  <button class="btn" onclick="mostrarStatus()">📊 Status</button>
+  <button class="btn" onclick="equiparItem()">🗡 Equipar</button>
+  <button class="btn" onclick="salvar()">💾 Salvar</button>
+  <button class="btn" onclick="sair()">🚪 Sair</button>
+  <pre id="log"></pre>
+</div>
+
+<script>
+let player = null;
+let biomaAtual = "Planície";
+
+class Player {
+  constructor(nome, classe, hp, mp, atk, defesa) {
+    this.nome = nome;
+    this.classe = classe;
+    this.hp = hp;
+    this.max_hp = hp;
+    this.mp = mp;
+    this.max_mp = mp;
+    this.atk = atk;
+    this.defesa = defesa;
+    this.gold = 0;
+    this.exp = 0;
+    this.lvl = 1;
+    this.inventario = [];
+  }
+}
+
+class Enemy {
+  constructor(nome, hp, atk, gold, exp, img) {
+    this.nome = nome;
+    this.hp = hp;
+    this.atk = atk;
+    this.gold = gold;
+    this.exp = exp;
+    this.img = img;
+  }
+}
+
+function novoJogo() {
+  let nome = prompt("Digite o nome do seu herói:");
+  if (!nome) return;
+  player = new Player(nome, "", 0, 0, 0, 0);
+  document.getElementById("start").style.display = "none";
+  document.getElementById("classeSelect").style.display = "block";
+}
+
+function escolherClasse(classe) {
+  if (classe === "Guerreiro") player = new Player(player.nome, classe, 150, 30, 20, 10);
+  if (classe === "Mago") player = new Player(player.nome, classe, 90, 100, 25, 5);
+  if (classe === "Arqueiro") player = new Player(player.nome, classe, 120, 50, 18, 8);
+
+  document.getElementById("classeSelect").style.display = "none";
+  document.getElementById("menu").style.display = "block";
+  atualizarStatus();
+  log(`🎮 Bem-vindo, ${player.nome} o ${player.classe}!`);
+}
+
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function explorar() {
+  const monstros = gerarMonstros(biomaAtual);
+  const inimigo = monstros[rand(0, monstros.length - 1)];
+  batalha(inimigo);
+}
+
+function gerarMonstros(bioma) {
+  const monstros = [];
+  for (let i = 0; i < 5; i++) {
+    monstros.push(new Enemy(
+      `${bioma} Monstro ${i+1}`,
+      rand(50, 150),
+      rand(5, 20),
+      rand(10, 50),
+      rand(20, 80),
+      "https://placehold.co/100x100/FF0000/FFF?text=Monstro"
+    ));
+  }
+  return monstros;
+}
+
+function batalha(enemy) {
+  log(`🔥 Um ${enemy.nome} apareceu!`);
+  while (player.hp > 0 && enemy.hp > 0) {
+    const acao = prompt(`${player.nome} HP:${player.hp}/${player.max_hp}\n${enemy.nome} HP:${enemy.hp}\n1.Atacar 2.Curar`);
+    if (acao === "1") {
+      const dano = rand(player.atk - 5, player.atk + 5);
+      enemy.hp -= dano;
+      log(`⚔️ Você causou ${dano} em ${enemy.nome}`);
+    } else if (acao === "2") {
+      const cura = rand(20, 40);
+      player.hp = Math.min(player.max_hp, player.hp + cura);
+      log(`🧪 Você curou ${cura} HP`);
+    }
+    if (enemy.hp > 0) {
+      const danoInimigo = Math.max(1, rand(enemy.atk - 3, enemy.atk + 3) - player.defesa);
+      player.hp -= danoInimigo;
+      log(`💢 ${enemy.nome} causou ${danoInimigo}`);
+    }
+  }
+
+  if (player.hp > 0) {
+    log(`✅ Você derrotou ${enemy.nome}!`);
+    player.gold += enemy.gold;
+    player.exp += enemy.exp;
+    subirNivel();
+  } else {
+    log("💀 Você foi derrotado! Revivendo com 50% do HP...");
+    player.hp = Math.floor(player.max_hp * 0.5);
+  }
+  atualizarStatus();
+}
+
+function subirNivel() {
+  const req = player.lvl * 100;
+  if (player.exp >= req) {
+    player.lvl++;
+    player.exp -= req;
+    player.max_hp += 20;
+    player.atk += 5;
+    player.defesa += 2;
+    log(`⭐ Subiu para o nível ${player.lvl}!`);
+  }
+}
+
+function viajar() {
+  const biomas = ["Planície", "Deserto", "Floresta", "Gelo", "Lava"];
+  const escolha = prompt(`Escolha bioma:\n${biomas.join(", ")}`);
+  if (biomas.includes(escolha)) {
+    biomaAtual = escolha;
+    log(`🗺 Viajou para ${escolha}!`);
+  } else log("❌ Bioma inválido!");
+}
+
+function mostrarInventario() {
+  if (!player.inventario.length) log("🎒 Inventário vazio.");
+  else player.inventario.forEach((i, n) => log(`${n+1}. ${i.nome}`));
+}
+
+function equiparItem() { log("⚔️ Sistema de equipar em desenvolvimento..."); }
+
+function ferreiro() {
+  log("⚒️ Ferreiro pode forjar armas raras (em breve).");
+}
+
+function mostrarStatus() {
+  log(`📊 ${player.nome} | Classe: ${player.classe}\nHP:${player.hp}/${player.max_hp}\nATK:${player.atk} DEF:${player.defesa}\nGold:${player.gold} EXP:${player.exp}/${player.lvl*100}`);
+}
+
+function salvar() {
+  localStorage.setItem("saveRPGValid", JSON.stringify({player, biomaAtual}));
+  log("💾 Jogo salvo!");
+}
+
+function carregarJogo() {
+  const save = localStorage.getItem("saveRPGValid");
+  if (!save) return alert("Nenhum save encontrado!");
+  const data = JSON.parse(save);
+  player = Object.assign(new Player(), data.player);
+  biomaAtual = data.biomaAtual;
+  document.getElementById("start").style.display = "none";
+  document.getElementById("menu").style.display = "block";
+  atualizarStatus();
+  log(`🔄 Save carregado com sucesso!`);
+}
+
+function sair() { location.reload(); }
+
+function atualizarStatus() {
+  document.getElementById("status").innerText = `${player.nome} - ${player.classe} | Nível ${player.lvl} | ${biomaAtual}`;
+}
+
+function log(txt) {
+  const box = document.getElementById("log");
+  box.innerText += txt + "\n";
+  box.scrollTop = box.scrollHeight;
+}
+</script>
+</body>
+</html>
